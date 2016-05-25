@@ -1,9 +1,13 @@
 package com.example.android.sunshine.app;
 
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,8 +16,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.example.android.sunshine.app.Model.WeatherObject;
 
@@ -33,7 +39,9 @@ import java.util.Arrays;
  */
 public class ForecastFragment extends Fragment {
 
-    private ArrayAdapter<String> mForecastAdapter;
+    //private ArrayAdapter<String> mForecastAdapter;
+    private ForecastAdapter mForecastAdapter;
+    ArrayList<WeatherObject> mWeatherObjects;
 
     public ForecastFragment() {
     }
@@ -50,36 +58,33 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        //ArrayList<WeatherObject> weaterDataList = new FetchWeatherTask().execute("94043");
-        String[] forecastDummyData = {
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees",
-                "Today - Sunny - 12 Degrees",
-                "Tomorrow - Cloudy - 9 Degrees",
-                "Friday - Sunny - 13 Degrees"
-        };
-        ArrayList<String> listOfData = new ArrayList<String>(Arrays.asList(forecastDummyData));
-        mForecastAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecast, R.id.list_item_forecast_text);
+        mForecastAdapter = new ForecastAdapter(getActivity(), mWeatherObjects);
 
         ListView forecastListView = (ListView) rootView.findViewById(R.id.listview_forecast);
         forecastListView.setAdapter(mForecastAdapter);
+        forecastListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent detailIntent = new Intent(getActivity(), DetailActivity.class);
+                detailIntent.putExtra(Intent.EXTRA_TEXT, mWeatherObjects.get(i).getWeatherDate());
+                startActivity(detailIntent);
+            }
+        });
+
         return rootView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    public void updateWeather(){
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = preferences.getString(getString(R.string.pref_location_key), "defaultValue");
+
+        new FetchWeatherTask().execute(location);
     }
 
     @Override
@@ -96,7 +101,7 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
 
         if (id == R.id.action_refresh) {
-            new FetchWeatherTask().execute("94043");
+            updateWeather();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -136,7 +141,7 @@ public class ForecastFragment extends Fragment {
                         .appendQueryParameter(DAYS_PARAM, Integer.toString(numOfDays))
                         .appendQueryParameter(APPID_PARAM, "f680bbd4b65b83aca0182de93b82c56d")
                         .build();
-
+                Log.v("FetchWeatherTask", "endpoint_url = " + builtUri.toString());
                 URL url = new URL(builtUri.toString());
                 //Create the request
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -193,9 +198,8 @@ public class ForecastFragment extends Fragment {
         protected void onPostExecute(ArrayList<WeatherObject> weatherObjects) {
             if (weatherObjects != null) {
                 mForecastAdapter.clear();
-                for (WeatherObject wo : weatherObjects){
-                    mForecastAdapter.add(wo.getWeatherDate() + " - " + wo.getWeather().get("main"));
-                }
+                mWeatherObjects.clear();
+                mWeatherObjects = weatherObjects;
             }
         }
     }
