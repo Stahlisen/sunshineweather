@@ -40,8 +40,7 @@ import java.util.Arrays;
 public class ForecastFragment extends Fragment {
 
     //private ArrayAdapter<String> mForecastAdapter;
-    private ForecastAdapter mForecastAdapter;
-    ArrayList<WeatherObject> mWeatherObjects;
+    private ArrayAdapter<String> mForecastAdapter;
 
     public ForecastFragment() {
     }
@@ -58,7 +57,7 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        mForecastAdapter = new ForecastAdapter(getActivity(), mWeatherObjects);
+        mForecastAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecast, R.id.list_item_forecast_text);
 
         ListView forecastListView = (ListView) rootView.findViewById(R.id.listview_forecast);
         forecastListView.setAdapter(mForecastAdapter);
@@ -66,7 +65,7 @@ public class ForecastFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class);
-                detailIntent.putExtra(Intent.EXTRA_TEXT, mWeatherObjects.get(i).getWeatherDate());
+                detailIntent.putExtra(Intent.EXTRA_TEXT, mForecastAdapter.getItem(i));
                 startActivity(detailIntent);
             }
         });
@@ -80,7 +79,7 @@ public class ForecastFragment extends Fragment {
         updateWeather();
     }
 
-    public void updateWeather(){
+    public void updateWeather() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String location = preferences.getString(getString(R.string.pref_location_key), "defaultValue");
 
@@ -198,8 +197,9 @@ public class ForecastFragment extends Fragment {
         protected void onPostExecute(ArrayList<WeatherObject> weatherObjects) {
             if (weatherObjects != null) {
                 mForecastAdapter.clear();
-                mWeatherObjects.clear();
-                mWeatherObjects = weatherObjects;
+                for (WeatherObject wo : weatherObjects) {
+                    mForecastAdapter.add(wo.getWeatherDate() + " - " + wo.getWeather().get("main"));
+                }
             }
         }
     }

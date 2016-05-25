@@ -25,7 +25,7 @@ public class ForecastAdapter extends ArrayAdapter<WeatherObject> {
 
     @Override
     public int getCount() {
-        return super.getCount();
+        return 0;
     }
 
     @Override
